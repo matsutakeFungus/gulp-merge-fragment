@@ -13,9 +13,9 @@
     "gulp-plugin"
   ],
   "author": {
-    "name": "matsutakeFungus",
+    "name": "matsutakefungus",
     "email": "251151419@qq.com",
-    "url": "https://github.com/matsutakeFungus"
+    "url": "https://github.com/matsutakefungus"
   },
   "repository": "https://github.com/matsutakeFungus/gulp-fragment-merge.git",
   "dependencies": {

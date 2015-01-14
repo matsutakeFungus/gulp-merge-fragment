@@ -34,6 +34,3 @@ The message you wish to attach to file.
 ## License
 
 [MIT License](http://en.wikipedia.org/wiki/MIT_License)
-
-[npm-url]: https://npmjs.org/package/gulp-fragment-merge
-[npm-image]: https://badge.fury.io/js/gulp-fragment-merge.png
