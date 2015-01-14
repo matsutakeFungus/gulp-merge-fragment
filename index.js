@@ -33,8 +33,6 @@ module.exports=function(options){
 			return ;
     }
     resolveFragments(options,fragments);
-	
-	//console.log("options------>"+JSON.stringify(options));
 	if(options.fragments.length<=0){
 		return;
 	}	
