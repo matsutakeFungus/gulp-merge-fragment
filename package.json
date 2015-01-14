@@ -2,19 +2,19 @@
 {
   "name": "gulp-merge-fragment",
   "version": "0.0.1",
-  "description": "A plugin for Gulp",
+  "description": "merge-fragment plugin for Gulp",
   "keywords": [
     "gulp",
     "html",
     "script",
     "link",
-    "merge"
+    "merge",
     "gulpplugin",
     "gulp-plugin"
   ],
   "author": {
     "name": "matsutakeFungus",
-    "email": "",
+    "email": "251151419@qq.com",
     "url": "https://github.com/matsutakeFungus"
   },
   "repository": "https://github.com/matsutakeFungus/gulp-fragment-merge.git",
