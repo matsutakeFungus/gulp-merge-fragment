@@ -1,0 +1,38 @@
+
+{
+  "name": "gulp-merge-fragment",
+  "version": "0.0.1",
+  "description": "A plugin for Gulp",
+  "keywords": [
+    "gulp",
+    "html",
+    "script",
+    "link",
+    "merge"
+    "gulpplugin",
+    "gulp-plugin"
+  ],
+  "author": {
+    "name": "matsutakeFungus",
+    "email": "",
+    "url": "https://github.com/matsutakeFungus"
+  },
+  "repository": "https://github.com/matsutakeFungus/gulp-fragment-merge.git",
+  "dependencies": {
+    "vinyl": "~0.2.3",
+    "through2": "~0.4.1",
+    "cheerio": "~0.13.1",
+    "extend": "~1.2.1",
+    "q": "~1.0.1"
+  },
+  "devDependencies": {
+    "mocha": "*",
+    "chai": "*",
+    "gulp-util": "~2.2.14"
+  },
+  "engines": {
+    "node": ">= 0.10.0",
+    "npm": ">=1.2.10"
+  },
+  "license": "MIT"
+}
