@@ -2,7 +2,7 @@
 合并页面中引用文件到当前页面
 ## Usage
 
-First, install `gulp-fragment-merge` as a development dependency:
+First, install `gulp-merge-fragment` as a development dependency:
 
 ```shell
 npm install --save-dev gulp-fragment-merge
@@ -11,7 +11,7 @@ npm install --save-dev gulp-fragment-merge
 Then, add it to your `gulpfile.js`:
 
 ```javascript
-var merge-fragment = require("gulp-fragment-merge");
+var merge-fragment = require("gulp-merge-fragment");
 
 gulp.src("./src/*.ext")
 	.pipe(merge-fragment({
