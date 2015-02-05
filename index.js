@@ -8,19 +8,23 @@ var fs = require('fs'),
     q = require('q');
 module.exports=function(options){
 	var defaults = {
-		fragment: '*',//script|link|*
+		fragment: '*',//script|css|*
 		createReadStream : fs.createReadStream
 	};
 	var fragments = {
 		script : {
 			selector: 'script:not([data-ignore=true], [data-remove=true])',
 			ele:'<script type=\"text/javascript\"></script>',
+			elePrefix:"<script type=\"text/javascript\">",
+			eleSuffix:"</script>",
 			eleSelector:'script[type=\"text/javascript\"]:not([data-ignore=true], [data-remove=true],[src$=\".js\"])',
 			getFileName: function(node) { return node.attr('src'); }
 		},
 		css : {
 			selector: 'link[rel=stylesheet]:not([data-ignore=true], [data-remove=true])',
 			ele:'<style type=\"text/css\"></style>',
+			elePrefix:"<style type=\"text/css\">",
+			eleSuffix:"</style>",			
 			eleSelector:'style[type=\"text/css\"]:not([data-ignore=true], [data-remove=true],[href$=\".css\"])',
 			getFileName: function(node) { return node.attr('href'); }
 		}
@@ -84,103 +88,143 @@ module.exports=function(options){
 	// Calls the callback for each matching in the contents, with an error object
 	// and the filename.  callback(err, fileName).
 	// fileName === null signals the end of the matches
-	function transformFile(contents, callback) {
-		//console.log("--->"+callback);
-		var $ = cheerio.load(contents.toString());
-		var _Files=[];
-		for(var i=0;i<options.fragments.length;i++){
-           var _fragOptions = options.fragments[i];
-           $(_fragOptions.selector).each(function() {
-           	   var element = $(this);
-           	   var fileName = _fragOptions.getFileName(element);
-				if (!!fileName) {
-					var _ele = $.root().find(_fragOptions.eleSelector);
-					if (!_ele || _ele.length <= 0) {
-						_ele = $(_fragOptions.ele);
-						console.log("create dom object:"+_ele);
-						var _parentEle = element.parent();
-						if (!_parentEle || _parentEle.length <= 0) {
-							_parentEle = $.root();
-							_parentEle.append(_ele);
+	function handleFile(file,fileName, bufferReadPromises,scriptContentArray,stream) {
+		if (isRelative(fileName)) {
+			try {
+				
+				var absoluteFileName = makeAbsoluteFileName(file, fileName);
+				var readPromise = streamToBuffer(options.createReadStream(absoluteFileName))
+					.then(function(contents) {
+						if(contents && contents.length>0){
+							scriptContentArray.push("\r\n");
+							scriptContentArray.push(contents);
 						}
-					}
-					_Files.push({
-						"fileName": fileName,
-						"tagEle": _ele
+					}, function(err) {
+						console.log("read file stream error", err);
+						stream.emit('error', err);
 					});
-					element.remove();
-				}
-        	   
-           });
-		}
-		for(var j=0;j<_Files.length;j++){
-			
-				callback(_Files[j].fileName,_Files[j].tagEle);
-
-		}
-		callback(null, null,$.root());
-	}	
-	function handleFile(fileName,ele,file,stream,bufferReadPromises,callback,eleRootJQLite){
-		    if (fileName) {
-						if (isRelative(fileName)) {
-							try {
-								var absoluteFileName = makeAbsoluteFileName(file, fileName);
-								var readPromise = streamToBuffer(options.createReadStream(absoluteFileName))
-									.then(function(contents) {
-
-										ele.append(cheerio.load(contents.toString()).root());
-
-									}, function(err) {
-										console.log("read file stream error",err);								
-										stream.emit('error', err);
-									});
-								bufferReadPromises.push(readPromise);
-							} catch (err) {
-								console.log("transform file error,file name is "+fileName,err);
-								stream.emit('error', err);
-							}
-						} 
-			}else{
-							q.all(bufferReadPromises)
-								.then(function() {
-									if(eleRootJQLite){
-										file.contents = new Buffer(eleRootJQLite.html());
-										stream.push(file);
-									}									
-									callback();
-								},function(err){
-									if(eleRootJQLite){
-										file.contents = new Buffer(eleRootJQLite.html());
-										stream.push(file);
-									}
-									callback();
-								});				
+				bufferReadPromises.push(readPromise);
+			} catch (err) {
+				console.log("transform file error,file name is " + fileName, err);
+				stream.emit('error', err);
 			}
+		}
 	}
+	function transformFile(contents, stream,callback,file) {
+		var $ = cheerio.load(contents.toString());
+		var  mergeFrage=function($,key,ele){
+			 var mergeFiles= $(fragments[key].selector);
+			  if(mergeFiles.length<=0){
+			  	return false;
+			  }
+			  var _contents=[];
+			  var _promise=[];
+              for(var i=0;i<mergeFiles.length;i++){
+                var element = $(mergeFiles[i]);
+                var fileName = fragments[key].getFileName(element);
+                element.remove();
+                handleFile(file,fileName,_promise,_contents,stream);
+              }   
+           var _deferred = q.defer();  
+           var _innerJoin=function(reject){
+ 					  if(_contents.length>0){
+					  	   _contents.unshift("\r\n");
+                          var _tmp = fragments[key].elePrefix;
+                          for(var x=0;x<_contents.length;x++){
+                          	_tmp = _tmp+_contents[x];
+                          }
+                          _tmp = _tmp +fragments[key].eleSuffix;
+                          $.root().append(_tmp);
+                          if(!reject){
+                              _deferred.resolve($.root());
+                          }else{
+                              _deferred.reject(reject);
+                          }
+
+					  }          	
+           }
+			q.all(_promise)
+				.then(function() {
+                    _innerJoin();
+				}, function(err) {
+					 _innerJoin(); 					
+				});
+               
+		    return _deferred.promise;
+		};
+        var _bufferPromise=[];
+        var _readPromise;
+		if(options.fragment==="*"){
+            _readPromise = mergeFrage($,'script',($("body").length<=0?$:$("body")))
+                           .then(function(contents){},
+                           	     function(err){
+                           	        stream.emit('error', err);
+                                 });             
+            if(_readPromise){
+            	_bufferPromise.push(_readPromise);
+            }               
+            _readPromise = mergeFrage($,'css',($("head").length<=0?$:$("head")))
+                           .then(function(){},
+                           	     function(err){
+                                     stream.emit('error', err);
+                                 });
+            if(_readPromise){
+            	_bufferPromise.push(_readPromise);
+            }             
+		}else if(options.fragment==="script"){
+            _readPromise = mergeFrage($,'script',($("body").length<=0?$:$("body")))
+                           .then(function(contents){},
+                           	     function(err){
+                           	        stream.emit('error', err);
+                                 }); 
+             if(_readPromise){
+            	_bufferPromise.push(_readPromise);
+            }                                          
+		}else if(options.fragment==="css"){
+            _readPromise = mergeFrage($,'css',($("head").length<=0?$:$("head")))
+                           .then(function(){},
+                           	     function(err){
+                                     stream.emit('error', err);
+                                 });
+            if(_readPromise){
+            	_bufferPromise.push(_readPromise);
+            }         
+               
+		}else if(options.fragment==="html"){//@TODO
+
+		}
+		q.all(_bufferPromise).then(function() {
+			file.contents = new Buffer($.root().html());
+			stream.push(file);
+			callback();
+		}, function(err) {
+			file.contents = new Buffer($.root().html());
+			stream.push(file);
+			callback();
+		});
+
+
+	
+	}	
+	
 	var transform = function(file, enc, callback){
-		//console.log("------>"+file.path);
 		var stream = this;
 		stream.on('error', function(err) {
 			console.log(err);
 		});
-		var bufferReadPromises = [];
 		if(file.isNull()) {// No contents - do nothing
 			stream.push(file);
 			callback();
 		}else if(file.isStream()){
            streamToBuffer(file.contents)
            .then(function(contents) {
-				transformFile(contents, function(fileName, ele, eleRootJQLite) {
-                    handleFile(fileName,ele,file,stream,bufferReadPromises,callback,eleRootJQLite);
-				});
+				transformFile(contents,stream ,callback,file);
 			},
 		function(err) {
 			stream.emit('error', err);
 		});
 		}else if(file.isBuffer()){
-              transformFile(file.contents,function(fileName,ele,eleRootJQLite){
-				    handleFile(fileName,ele,file,stream,bufferReadPromises,callback,eleRootJQLite);
-              });			
+              transformFile(file.contents,stream ,callback,file);			
              
 		}
 
