@@ -13,7 +13,7 @@ module.exports=function(options){
 	};
 	var fragments = {
 		script : {
-			selector: 'script:not([data-ignore=true], [data-remove=true])',
+			selector: 'script:not([data-ignore=true], [data-remove=true],[type=\"text/ng-template\"])',
 			ele:'<script type=\"text/javascript\"></script>',
 			elePrefix:"<script type=\"text/javascript\">",
 			eleSuffix:"</script>",
@@ -155,38 +155,38 @@ module.exports=function(options){
         var _bufferPromise=[];
         var _readPromise;
 		if(options.fragment==="*"){
-            _readPromise = mergeFrage($,'script',($("body").length<=0?$:$("body")))
-                           .then(function(contents){},
+            _readPromise = mergeFrage($,'script',($("body").length<=0?$:$("body")));            
+            if(_readPromise){
+                 _readPromise.then(function(contents){},
                            	     function(err){
                            	        stream.emit('error', err);
-                                 });             
-            if(_readPromise){
+                                 });             	
             	_bufferPromise.push(_readPromise);
             }               
-            _readPromise = mergeFrage($,'css',($("head").length<=0?$:$("head")))
-                           .then(function(){},
-                           	     function(err){
-                                     stream.emit('error', err);
-                                 });
+            _readPromise = mergeFrage($,'css',($("head").length<=0?$:$("head")));
             if(_readPromise){
+                 _readPromise.then(function(contents){},
+                           	     function(err){
+                           	        stream.emit('error', err);
+                                 });                 	
             	_bufferPromise.push(_readPromise);
             }             
 		}else if(options.fragment==="script"){
-            _readPromise = mergeFrage($,'script',($("body").length<=0?$:$("body")))
-                           .then(function(contents){},
+            _readPromise = mergeFrage($,'script',($("body").length<=0?$:$("body"))); 
+             if(_readPromise){
+                 _readPromise.then(function(contents){},
                            	     function(err){
                            	        stream.emit('error', err);
-                                 }); 
-             if(_readPromise){
+                                 });                  	
             	_bufferPromise.push(_readPromise);
             }                                          
 		}else if(options.fragment==="css"){
-            _readPromise = mergeFrage($,'css',($("head").length<=0?$:$("head")))
-                           .then(function(){},
-                           	     function(err){
-                                     stream.emit('error', err);
-                                 });
+            _readPromise = mergeFrage($,'css',($("head").length<=0?$:$("head")));
             if(_readPromise){
+                 _readPromise.then(function(contents){},
+                           	     function(err){
+                           	        stream.emit('error', err);
+                                 });                 	
             	_bufferPromise.push(_readPromise);
             }         
                
