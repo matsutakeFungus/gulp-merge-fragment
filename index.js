@@ -126,7 +126,7 @@ module.exports=function(options){
                 handleFile(file,fileName,_promise,_contents,stream);
               }   
            var _deferred = q.defer();  
-           var _innerJoin=function(reject){
+           var _innerJoin=function(ele,reject){
  					  if(_contents.length>0){
 					  	   _contents.unshift("\r\n");
                           var _tmp = fragments[key].elePrefix;
@@ -134,9 +134,10 @@ module.exports=function(options){
                           	_tmp = _tmp+_contents[x];
                           }
                           _tmp = _tmp +fragments[key].eleSuffix;
-                          $.root().append(_tmp);
+
+                          ele.append(_tmp);
                           if(!reject){
-                              _deferred.resolve($.root());
+                              _deferred.resolve(ele);
                           }else{
                               _deferred.reject(reject);
                           }
@@ -145,9 +146,9 @@ module.exports=function(options){
            }
 			q.all(_promise)
 				.then(function() {
-                    _innerJoin();
+                    _innerJoin(ele);
 				}, function(err) {
-					 _innerJoin(); 					
+					 _innerJoin(ele,err); 					
 				});
                
 		    return _deferred.promise;
@@ -155,7 +156,7 @@ module.exports=function(options){
         var _bufferPromise=[];
         var _readPromise;
 		if(options.fragment==="*"){
-            _readPromise = mergeFrage($,'script',($("body").length<=0?$:$("body")));            
+            _readPromise = mergeFrage($,'script',($("body").length<=0?$.root():$("body")));            
             if(_readPromise){
                  _readPromise.then(function(contents){},
                            	     function(err){
@@ -163,7 +164,7 @@ module.exports=function(options){
                                  });             	
             	_bufferPromise.push(_readPromise);
             }               
-            _readPromise = mergeFrage($,'css',($("head").length<=0?$:$("head")));
+            _readPromise = mergeFrage($,'css',($("head").length<=0?$.root():$("head")));
             if(_readPromise){
                  _readPromise.then(function(contents){},
                            	     function(err){
@@ -172,7 +173,7 @@ module.exports=function(options){
             	_bufferPromise.push(_readPromise);
             }             
 		}else if(options.fragment==="script"){
-            _readPromise = mergeFrage($,'script',($("body").length<=0?$:$("body"))); 
+            _readPromise = mergeFrage($,'script',($("body").length<=0?$.root():$("body"))); 
              if(_readPromise){
                  _readPromise.then(function(contents){},
                            	     function(err){
@@ -181,7 +182,7 @@ module.exports=function(options){
             	_bufferPromise.push(_readPromise);
             }                                          
 		}else if(options.fragment==="css"){
-            _readPromise = mergeFrage($,'css',($("head").length<=0?$:$("head")));
+            _readPromise = mergeFrage($,'css',($("head").length<=0?$.root():$("head")));
             if(_readPromise){
                  _readPromise.then(function(contents){},
                            	     function(err){
